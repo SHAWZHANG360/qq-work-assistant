@@ -1,0 +1,21 @@
+{
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["images"],
+  "properties": {
+    "images": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["index", "text", "legibility", "uncertainties"],
+        "properties": {
+          "index": { "type": "integer" },
+          "text": { "type": "string" },
+          "legibility": { "type": "string", "enum": ["clear", "partial", "unreadable"] },
+          "uncertainties": { "type": "array", "items": { "type": "string" } }
+        }
+      }
+    }
+  }
+}

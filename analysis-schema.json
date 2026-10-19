@@ -1,0 +1,29 @@
+{
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["summary", "relevance", "actions", "questions", "notes"],
+  "properties": {
+    "summary": { "type": "string" },
+    "relevance": { "type": "string", "enum": ["direct", "organizational", "reference", "uncertain"] },
+    "actions": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["title", "owner", "deadline", "calendarStart", "calendarEnd", "location", "evidence", "needsConfirmation"],
+        "properties": {
+          "title": { "type": "string" },
+          "owner": { "type": ["string", "null"] },
+          "deadline": { "type": ["string", "null"] },
+          "calendarStart": { "type": ["string", "null"] },
+          "calendarEnd": { "type": ["string", "null"] },
+          "location": { "type": ["string", "null"] },
+          "evidence": { "type": "string" },
+          "needsConfirmation": { "type": "boolean" }
+        }
+      }
+    },
+    "questions": { "type": "array", "items": { "type": "string" } },
+    "notes": { "type": "array", "items": { "type": "string" } }
+  }
+}

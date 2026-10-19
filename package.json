@@ -1,0 +1,13 @@
+{
+  "name": "personal-qq-work-assistant",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=24 <25"
+  },
+  "scripts": {
+    "start": "node main.mjs",
+    "test": "node --test *.test.mjs"
+  }
+}

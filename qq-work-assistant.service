@@ -1,0 +1,36 @@
+[Unit]
+Description=Personal QQ work assistant
+Wants=network-online.target
+After=network-online.target
+StartLimitIntervalSec=300
+StartLimitBurst=5
+
+[Service]
+Type=simple
+User=qqassistant
+Group=qqassistant
+WorkingDirectory=/opt/qq-work-assistant
+ExecStart=/opt/qq-work-assistant/node/bin/node /opt/qq-work-assistant/main.mjs
+LoadCredential=assistant-config:/etc/qq-work-assistant/config.json
+StateDirectory=qq-work-assistant
+StateDirectoryMode=0700
+UMask=0077
+Restart=on-failure
+RestartSec=10
+TimeoutStopSec=30
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+RestrictSUIDSGID=true
+CapabilityBoundingSet=
+RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6
+MemoryHigh=700M
+MemoryMax=900M
+TasksMax=64
+
+[Install]
+WantedBy=multi-user.target
