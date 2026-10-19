@@ -1,0 +1,52 @@
+name: Ubuntu installation verification
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  install-and-test:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install on a fresh Ubuntu runner
+        run: sudo bash install.sh
+      - name: Verify service unit and least-privilege runtime
+        run: |
+          sudo systemd-analyze verify /etc/systemd/system/qq-work-assistant.service
+          sudo -u qqassistant /opt/qq-work-assistant/.venv/bin/python -c 'import pypdf; print(pypdf.__version__)'
+          cd /opt/qq-work-assistant
+          sudo -u qqassistant env QQ_ASSISTANT_PYTHON=/opt/qq-work-assistant/.venv/bin/python ./node/bin/node --test *.test.mjs
+          sudo -u qqassistant python3 -B -m unittest test_configure.py
+      - name: Start hardened systemd service with synthetic credentials and mock transports
+        run: |
+          sudo python3 - <<'PY'
+          import json
+          from pathlib import Path
+          file=Path('/etc/qq-work-assistant/config.json')
+          file.write_text(json.dumps(dict(appId='123456789',qqAppSecret='test-only-qq-secret-value',deepseekApiKey='test-only-api-key-value',name='',organization='',department='')))
+          file.chmod(0o600)
+          PY
+          sudo mkdir -p /etc/systemd/system/qq-work-assistant.service.d
+          printf '[Service]\nExecStart=\nExecStart=/opt/qq-work-assistant/node/bin/node /opt/qq-work-assistant/ci-smoke.mjs\n' | sudo tee /etc/systemd/system/qq-work-assistant.service.d/ci.conf > /dev/null
+          sudo systemctl daemon-reload
+          sudo systemctl enable --now qq-work-assistant
+          for attempt in $(seq 1 20); do
+            if curl -fsS http://127.0.0.1:18080/health; then break; fi
+            sleep 1
+          done
+          curl -fsS http://127.0.0.1:18080/health | python3 -c 'import json,sys; assert json.load(sys.stdin)["running"] is True'
+          sudo systemctl is-active qq-work-assistant
+          sudo systemctl is-enabled qq-work-assistant
+          sudo test "$(stat -c %a /etc/qq-work-assistant/config.json)" = 600
+          if sudo -u qqassistant cat /etc/qq-work-assistant/config.json >/dev/null 2>&1; then exit 1; fi
+          ss -lnt | grep '127.0.0.1:18080'
+          if ss -lnt | grep -E '(0\.0\.0\.0|\[::\]|\*):18080'; then exit 1; fi
+      - name: Verify rerun refuses to overwrite an installation
+        run: |
+          if sudo bash install.sh; then echo 'Unexpected overwrite'; exit 1; fi
+      - name: Diagnostics on failure
+        if: failure()
+        run: sudo journalctl -u qq-work-assistant -n 60 --no-pager
