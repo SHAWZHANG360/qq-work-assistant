@@ -10,7 +10,7 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - name: Install on a fresh Ubuntu runner
         run: sudo bash install.sh
       - name: Verify service unit and least-privilege runtime
@@ -40,7 +40,7 @@ jobs:
           curl -fsS http://127.0.0.1:18080/health | python3 -c 'import json,sys; assert json.load(sys.stdin)["running"] is True'
           sudo systemctl is-active qq-work-assistant
           sudo systemctl is-enabled qq-work-assistant
-          sudo test "$(stat -c %a /etc/qq-work-assistant/config.json)" = 600
+          test "$(sudo stat -c %a /etc/qq-work-assistant/config.json)" = 600
           if sudo -u qqassistant cat /etc/qq-work-assistant/config.json >/dev/null 2>&1; then exit 1; fi
           ss -lnt | grep '127.0.0.1:18080'
           if ss -lnt | grep -E '(0\.0\.0\.0|\[::\]|\*):18080'; then exit 1; fi
