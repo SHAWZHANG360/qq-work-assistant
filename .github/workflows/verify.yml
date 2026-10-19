@@ -11,6 +11,12 @@ jobs:
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Check commit email privacy
+        run: |
+          git log --all --format='%ae%n%ce' | python3 -c 'import sys; emails=set(sys.stdin.read().splitlines()); assert emails and all(e.endswith("@users.noreply.github.com") or e=="noreply@github.com" for e in emails), "Commit email privacy review required (addresses omitted)"; print("Commit email privacy check passed")'
       - name: Install on a fresh Ubuntu runner
         run: sudo bash install.sh
       - name: Verify service unit and least-privilege runtime
