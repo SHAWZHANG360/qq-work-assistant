@@ -1,6 +1,6 @@
 # 只拿到一个链接，从这里开始
 
-本页是给第一次使用的人和协助安装的 Agent 的共同入口。目标是：把助手部署到使用者自己的 Ubuntu 24.04 服务器，接自己的 QQ 机器人和 DeepSeek API，只接受本人消息。
+本页是给第一次使用的人和协助安装的 Agent 的共同入口。目标是：把助手部署到使用者自己的 Ubuntu 24.04 服务器，接自己的 QQ 机器人和 DeepSeek API，默认只接受本人消息，也可选择开启最多 3 位家人/好友的邀请制共享。
 
 **链接不会自动授予权限。** Agent 需要能读取文件、运行终端、访问网络，并获准连接目标服务器。只读问答、计划模式或不支持终端的任务只能提供指导。不要为安装关闭全部安全确认；按当前步骤批准必要权限即可。
 
@@ -20,6 +20,8 @@
 ```
 
 如果 Agent 打不开 GitHub 网页，先让它读取 [本页纯文本](https://raw.githubusercontent.com/SHAWZHANG360/qq-work-assistant/main/START_HERE.md) 和 [部署指南纯文本](https://raw.githubusercontent.com/SHAWZHANG360/qq-work-assistant/main/AGENT_SETUP.md)。这两个地址也打不开时，自己从 [发布页](https://github.com/SHAWZHANG360/qq-work-assistant/releases/latest) 下载源码 ZIP，解压后把目录交给 Agent。不要只上传 ZIP 后默认它已经解压、读过说明。
+
+希望共用时，把提示词里的“只给我本人使用”改为“我本人和最多 3 位家人/好友共用，请开启邀请制共享，记录、提醒和用量分开，带我逐人邀请和批准”。未明确选择共享时保持关闭；先验收管理员本人，再添加成员。
 
 ## 2. 在不同软件中怎么交给它
 
@@ -76,7 +78,7 @@ sudo apt-get update
 sudo apt-get install -y unzip
 mkdir -p ~/qq-assistant-setup
 cd ~/qq-assistant-setup
-unzip ~/qq-work-assistant-v1.1.1.zip
+unzip ~/qq-work-assistant-v1.2.0.zip
 cd qq-work-assistant
 python3 doctor.py --json
 ```
@@ -120,4 +122,4 @@ python3 doctor.py --json
 
 已按新用户路线检查公开下载、解压目录、文件入口、安装指引和人工交接，并有 Ubuntu 自动化安装及升级验证。本次没有登录三个产品的独立新账号逐一操作，因此不能宣称 Claude Code、TRAE、WorkBuddy 都已完成真人端到端实测。官方文档说明它们具备的能力，最终能执行到哪一步仍取决于具体客户端、版本、权限、网络和账号条件。
 
-想分享给朋友，先看 [FRIEND_SHARING.md](FRIEND_SHARING.md)。本项目每个实例绑定一个人。
+想分享给朋友，先看 [FRIEND_SHARING.md](FRIEND_SHARING.md)。管理员本人绑定一次，其他人通过邀请和批准加入。默认共享关闭。

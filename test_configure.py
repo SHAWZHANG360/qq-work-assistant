@@ -2,12 +2,25 @@ import json
 import tempfile
 import unittest
 from pathlib import Path
-from configure import validate, verify, save_atomic, SetupError, NoRedirect
+from configure import validate, verify, save_atomic, update_sharing, SetupError, NoRedirect
 
 def example():
     return dict(appId='123456789', qqAppSecret='test-only-qq-secret-value', deepseekApiKey='test-only-api-key-value', name='', organization='', department='')
 
 class ConfigureTests(unittest.TestCase):
+    def test_sharing_is_optional_boolean_and_update_preserves_secrets_with_backup(self):
+        self.assertNotIn('sharingEnabled',validate(example()))
+        for value in ['true',1,None,[]]:
+            with self.assertRaises(SetupError): validate({**example(),'sharingEnabled':value})
+        with tempfile.TemporaryDirectory() as directory:
+            file=Path(directory)/'config.json'
+            save_atomic(example(),file)
+            raw=file.read_bytes()
+            backup=update_sharing(True,file)
+            self.assertEqual(backup.read_bytes(),raw)
+            self.assertEqual(json.loads(file.read_text()),{**example(),'sharingEnabled':True})
+            update_sharing(False,file)
+            self.assertEqual(json.loads(file.read_text()),{**example(),'sharingEnabled':False})
     def test_validation_and_atomic_save(self):
         with tempfile.TemporaryDirectory() as directory:
             file=Path(directory)/'config.json'

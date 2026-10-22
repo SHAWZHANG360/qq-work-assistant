@@ -37,7 +37,8 @@ def summarize_runtime(s):
     allowed = ('connected', 'connecting', 'reconnecting', 'stopped', 'error')
     return {'reachable': True, 'qq': network if network in allowed else 'unknown',
             'bound': s.get('bound') is True, 'analysisReady': s.get('analysisReady') is True,
-            'hasError': bool(s.get('lastError') or s.get('reminderWarning'))}
+            'hasError': bool(s.get('lastError') or s.get('reminderWarning') or s.get('family',{}).get('warning')),
+            'sharingEnabled': s.get('family',{}).get('enabled') is True}
 
 def stage(s):
     if not s['supportedOS'] or not s['supportedArch'] or not s['systemd']:

@@ -22,3 +22,7 @@ backups/
 *.tar.gz
 deployment-state*.json
 deployment-state*.md
+family-members.json
+family-enabled.json
+family-users/
+config-before-sharing-*.json.bak

@@ -21,6 +21,8 @@ test('configuration rejects missing keys, injected fields and whitespace credent
   for(const patch of [{appId:''},{appId:12345},{qqAppSecret:' test-only-secret '},{deepseekApiKey:''},{extra:'secret'},{name:'a\n'}])
     assert.throws(()=>validateConfig({...config,...patch}));
   assert.equal(validateConfig(config).appId,'987654321');
+  assert.equal(validateConfig(config).sharingEnabled,false);
+  for(const sharingEnabled of ['true',1,null,[]])assert.throws(()=>validateConfig({...config,sharingEnabled}));
 });
 test('expired pairing code cannot bind and missing persisted owner fails closed',t=>{
   const dir=tmp(t), store=createStore(dir), old=store.ensurePairingCode();
@@ -58,8 +60,25 @@ test('fresh main entry starts with custom AppID, binds and hides keys; POST requ
   assert.equal(calls,0);
   await runtime.application.receive({id:'pair',senderId:'test-owner',timestamp:new Date().toISOString(),text:state.pairingCommand});
   state=runtime.application.state(); assert.equal(state.bound,true); assert.equal(state.pairingCommand,null);
+  assert.equal(state.family.enabled,false);assert.equal(fs.existsSync(path.join(dir,'family-members.json')),false);
+  await runtime.application.receive({id:'disabled-invite',senderId:'test-owner',timestamp:new Date().toISOString(),text:'/invite friend'});
+  assert.equal(calls,0);
   const result=await fetch(base+'/api/test',{method:'POST',headers:{...headers,Origin:base},body:'{}'});
   assert.equal(result.status,200); assert.equal(calls,1);
+});
+
+test('fresh sharing entry binds owner before accepting invitations on one QQ transport',async t=>{
+  const dir=tmp(t),port=await freePort(),replies=[];let connections=0;
+  class Client{constructor(options){this.options=options;connections++;assert.equal(options.appId,config.appId);}start(){this.options.onStatus({state:'connected',message:'test'});}stop(){}async reply(x){replies.push(x);}}
+  const runtime=await startAssistant({config:{...config,sharingEnabled:true},dataDir:dir,pythonExecutable:process.execPath,port,Client,documentStore:{},provider:{analyzeMessage:async()=>{throw Error('No model call expected');}}});
+  t.after(()=>runtime.close());
+  const send=(senderId,text)=>runtime.application.receive({id:crypto.randomUUID(),senderId,text,timestamp:new Date().toISOString()});
+  await send('outsider','/invite friend');assert.equal(replies.length,0);
+  await send('test-owner',runtime.application.state().pairingCommand);assert.match(replies.at(-1).content,/绑定成功/);
+  await send('test-owner','/invite friend');const code=replies.at(-1).content.match(/加入 ([A-Za-z0-9_-]{24})/)[1];
+  await send('test-friend','加入 '+code);const id=runtime.application.state().family.members[0].id;
+  await send('test-owner','/approve '+id);await send('test-friend','/help');assert.match(replies.at(-1).content,/自己的/);
+  assert.equal(connections,1);assert.equal(runtime.application.state().family.members[0].status,'active');
 });
 test('occupied port prevents even constructing a QQ client',async t=>{
   const dir=tmp(t), port=await freePort(), blocker=createServer();

@@ -16,7 +16,11 @@
 
 仓库入口：[Agent 部署流程](AGENT_SETUP.md) · [Agent 约定](AGENTS.md) · [手动安装教程](安装教程.md)。提供链接本身不授予工具权限；Agent 需要能执行终端命令，并连接你授权的服务器。只有聊天能力的助手可以指导，但无法替你执行安装。
 
-最新版本 **v1.1.1**：[下载源码包](https://github.com/SHAWZHANG360/qq-work-assistant/raw/refs/heads/main/qq-work-assistant-v1.1.1.zip) · [校验和](https://github.com/SHAWZHANG360/qq-work-assistant/blob/main/SHA256SUMS.txt) · [更新说明](CHANGELOG.md)。v1.1.1 补全新用户指引，运行逻辑与 v1.1.0 相同。旧版压缩包保留为历史快照。
+最新版本 **v1.2.0**：[下载源码包](https://github.com/SHAWZHANG360/qq-work-assistant/raw/refs/heads/main/qq-work-assistant-v1.2.0.zip) · [校验和](https://github.com/SHAWZHANG360/qq-work-assistant/blob/main/SHA256SUMS.txt) · [更新说明](CHANGELOG.md)。v1.2.0 新增可选家人/好友邀请制，默认关闭，升级不会自动开放权限。旧版压缩包保留为历史快照。
+
+## 可选：家人或好友共用
+
+仅本人使用无需额外操作。想共用现有机器人与服务器，可在配置向导选择开启，或安装/升级后运行 `sudo python3 /opt/qq-work-assistant/configure.py --sharing on`，再重启服务。管理员在 QQ 发 `/invite 称呼`，对方使用邀请后由管理员 `/approve 编号` 批准。费用仍由管理员支付，用量单独统计；成员无需另买服务器。逐步操作和关闭方法见 [FRIEND_SHARING.md](FRIEND_SHARING.md)。
 
 ## 回复和提醒规则
 
@@ -43,13 +47,13 @@ sudo systemctl enable --now qq-work-assistant
 sudo systemctl status qq-work-assistant --no-pager
 ```
 
-向导会要求你填写自己的 AppID、QQ AppSecret、DeepSeek API Key。密钥不回显；姓名、单位和部门可以留空。不要把真实配置写进下载的源码文件，不要提交到 GitHub。
+向导会要求你填写自己的 AppID、QQ AppSecret、DeepSeek API Key，并选择是否开启家人/好友共享（默认关闭）。密钥不回显；姓名、单位和部门可以留空。不要把真实配置写进下载的源码文件，不要提交到 GitHub。
 
 在自己电脑建立 SSH 隧道，打开管理页，复制临时绑定指令，发给自己创建的机器人，收到“本人绑定成功”后再发虚构测试通知。具体 SSH 命令和成功标志见教程。
 
 ## 数据和权限
 
-- 只处理绑定者主动发送的私聊，不读取工作群或其他会话。身份绑定使用 QQ 事件中的用户标识，姓名关键词不能绕过授权。
+- 默认只处理绑定者主动发送的私聊；可选择开启共享，让管理员与最多 3 位经邀请、批准的家人/好友使用，每人记录、提醒、关键词和用量隔离。不读取工作群或其他会话。身份绑定使用 QQ 事件中的用户标识，姓名关键词不能绕过授权。
 - 文字、图片或文档提取文字会提交 DeepSeek，费用计入你自己的 API 账号；原文、附件和分析结果保存在你的服务器。
 - 管理服务仅监听服务器的 `127.0.0.1:18080`，通过 SSH 隧道访问。不要改成公网监听，不要在云防火墙开放该端口。
 - 密钥文件在 `/etc/qq-work-assistant/config.json`，权限 600、root 持有，由 systemd 凭据机制交给进程。**这不是磁盘加密**，服务器管理员仍可读取；请保护服务器账号和备份。
@@ -60,7 +64,7 @@ sudo systemctl status qq-work-assistant --no-pager
 
 | 文件 | 用途 |
 |---|---|
-| `START_HERE.md` / `FRIEND_SHARING.md` | 新用户与各 Agent 客户端起步 / 分享好友与单用户边界 |
+| `START_HERE.md` / `FRIEND_SHARING.md` | 新用户与各 Agent 客户端起步 / 可选家人好友共享操作 |
 | `AGENTS.md` / `AGENT_SETUP.md` / `CLAUDE.md` | Agent 入口、按阶段自动执行与人工操作指引 |
 | `doctor.py` / `upgrade.sh` | 只读环境检查 / 备份后升级通用版 |
 | `action-brief.mjs` / `reminders.mjs` | 动作优先的回复、持久化提醒与发送状态 |

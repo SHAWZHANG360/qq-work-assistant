@@ -1,3 +1,4 @@
 47707c01d19a39c4ba99d46036dc15791735a7468a90a13474376ac82d300b0e  qq-work-assistant-v1.0.0.zip
 213c4b21727045f8dd95b5a22d2beb65801e45651525d0dbb17c48f2b9fdce0d  qq-work-assistant-v1.1.0.zip
 ffccd51f12c4b9782e8db29d2521be915f7bf7a2312b133ae8a1b9b5784887d9  qq-work-assistant-v1.1.1.zip
+b1dc986bb2aac579b6b76795a68c62ff5794e4798f47dcf4ff18bc0ad3262a1a  qq-work-assistant-v1.2.0.zip

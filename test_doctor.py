@@ -6,7 +6,7 @@ class DoctorTest(unittest.TestCase):
         state = {'network': {'state':'connected'},'bound':True,'lastError':'private error',
                  'pairingCommand':'private code','appId':'private id','report':'private report'}
         result = summarize_runtime(state)
-        self.assertEqual(set(result), {'reachable','qq','bound','analysisReady','hasError'})
+        self.assertEqual(set(result), {'reachable','qq','bound','analysisReady','hasError','sharingEnabled'})
         self.assertTrue(result['hasError'])
         self.assertNotIn('private', str(result))
 

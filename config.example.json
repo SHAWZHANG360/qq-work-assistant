@@ -4,5 +4,6 @@
   "deepseekApiKey": "",
   "name": "",
   "organization": "",
-  "department": ""
+  "department": "",
+  "sharingEnabled": false
 }

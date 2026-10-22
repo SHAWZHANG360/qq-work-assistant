@@ -1,7 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
-import { createApplication } from './application.mjs';
+import { createFamilyApplication } from './family-application.mjs';
 import { createLocalServer } from './server.mjs';
 import { QQClient } from './qq-client.mjs';
 import { formatAnalysis } from './analyzer.mjs';
@@ -31,11 +31,12 @@ export async function startAssistant({ config, dataDir, pythonExecutable, port =
   try {
     fs.mkdirSync(dataDir,{ recursive:true,mode:0o700 });
     provider ??= createDeepSeek({ apiKey: config.deepseekApiKey });
-    application = createApplication({ appId: config.appId, dataDir, preferences: preferencesFor(config), Client,
+    application = createFamilyApplication({ appId: config.appId, sharingEnabled:config.sharingEnabled, dataDir, preferences: preferencesFor(config), Client,
       ...provider, analyze: provider.analyzeMessage, formatAnalysis,
       secrets: { exists: () => true, load: async () => config.qqAppSecret },
-      modelSettings: createDeepSeekSettings({ dataDir }),
-      documentStore: documentStore ?? createDocumentStore({ dataDir, pythonExecutable }),
+      pythonExecutable,
+      settingsFactory:dir=>createDeepSeekSettings({dataDir:dir}),
+      documentFactory:dir=>dir===dataDir&&documentStore?documentStore:createDocumentStore({dataDir:dir,pythonExecutable}),
     });
     await application.restore();
   } catch (error) { application?.stop(); server.close(); throw error; }
