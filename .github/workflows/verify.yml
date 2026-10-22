@@ -25,7 +25,7 @@ jobs:
           sudo -u qqassistant /opt/qq-work-assistant/.venv/bin/python -c 'import pypdf; print(pypdf.__version__)'
           cd /opt/qq-work-assistant
           sudo -u qqassistant env QQ_ASSISTANT_PYTHON=/opt/qq-work-assistant/.venv/bin/python ./node/bin/node --test *.test.mjs
-          sudo -u qqassistant python3 -B -m unittest test_configure.py
+          sudo -u qqassistant python3 -B -m unittest test_configure.py test_doctor.py
       - name: Start hardened systemd service with synthetic credentials and mock transports
         run: |
           sudo python3 - <<'PY'
@@ -53,6 +53,13 @@ jobs:
       - name: Verify rerun refuses to overwrite an installation
         run: |
           if sudo bash install.sh; then echo 'Unexpected overwrite'; exit 1; fi
+      - name: Verify read-only doctor and upgrade preserve configuration and owner
+        run: |
+          sudo python3 /opt/qq-work-assistant/doctor.py --json --require-ready
+          sudo sha256sum /etc/qq-work-assistant/config.json /var/lib/qq-work-assistant/owner.json /var/lib/qq-work-assistant/reminders.json > /tmp/config-before.sha256
+          sudo bash upgrade.sh
+          sudo sha256sum --check /tmp/config-before.sha256
+          sudo python3 /opt/qq-work-assistant/doctor.py --json --require-ready
       - name: Diagnostics on failure
         if: failure()
         run: sudo journalctl -u qq-work-assistant -n 60 --no-pager
