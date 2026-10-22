@@ -1,6 +1,8 @@
 # 把链接交给 Agent 后，怎样带用户完成搭建
 
-适用于有终端工具的 Codex、Claude Code 或其他编程 Agent。仅能聊天、没有网络或终端权限的助手无法替用户安装，请明确能力边界并转为逐步指导。仓库说明不会赋予 Agent 额外权限，也不能代替用户的付款、实名或账号验证。
+适用于有终端工具的 Codex、Claude Code、TRAE、WorkBuddy 或其他 Agent。仅能聊天、没有网络或终端权限的助手无法替用户安装，请明确能力边界并转为逐步指导。仓库说明不会赋予 Agent 额外权限，也不能代替用户的付款、实名或账号验证。
+
+新用户先看 [START_HERE.md](START_HERE.md)：包含各客户端打开项目的办法、网页不可读时的纯文本入口、无 Git 或服务器下载失败时的路线，以及人工步骤交接格式。朋友使用方式见 [FRIEND_SHARING.md](FRIEND_SHARING.md)。
 
 ## 用户只需要发这段话
 
@@ -8,7 +10,7 @@
 请帮我搭建这个 QQ 工作助手：
 https://github.com/SHAWZHANG360/qq-work-assistant
 
-先读取仓库的 AGENTS.md 和 AGENT_SETUP.md，并检查当前实际环境。
+先下载仓库，读取 START_HERE.md、AGENTS.md 和 AGENT_SETUP.md，并检查当前实际环境及工具权限。
 我希望只给自己使用，分析接我自己的 DeepSeek API。
 请实际完成你有权限执行的下载、安装、配置服务和验证，不要只给我命令清单。
 需要我登录、认证、购买、充值、填写密钥、确认权限或发 QQ 测试消息时，
@@ -89,14 +91,14 @@ git rev-parse HEAD
 python3 doctor.py --json
 ```
 
-没有 Git 时，Agent 可以使用已有工具下载 [最新源码 ZIP](https://github.com/SHAWZHANG360/qq-work-assistant/archive/refs/heads/main.zip)，或先安装 Git。不要把下载内容直接通过管道交给 root shell 执行。检查仓库来源、安装脚本和所需权限后再运行。
+没有 Git 时，Agent 可以使用已有工具下载 [最新源码 ZIP](https://github.com/SHAWZHANG360/qq-work-assistant/archive/refs/heads/main.zip)，或先安装 Git。服务器无法访问 GitHub 时，按 [START_HERE.md 第 4 步](START_HERE.md) 在本机下载再上传。不要把下载内容直接通过管道交给 root shell 执行。检查仓库来源、安装脚本和所需权限后再运行。
 
 `doctor.py` 只读环境和经过筛选的运行状态，不读取配置文件正文、不打印控制令牌、不调用模型。输出的 `nextStage` 决定下一步：
 
 | nextStage | Agent 下一步 |
 | --- | --- |
 | `unsupported_environment` | 检查是否误在本地电脑运行；换用支持的服务器系统 |
-| `ready_to_install` | 进入第 5 步首次安装 |
+| `ready_to_install` | 先确认服务器端 18080 没有其他服务占用，服务文件不存在且磁盘足够，再进入第 5 步首次安装；此检查工具不代替完整的冲突审查 |
 | `review_existing_paths` | 有旧文件但不是完整通用版，先调查并备份，不删除重装 |
 | `rerun_doctor_with_sudo` | 经已有授权，以 sudo 重新运行只读检查 |
 | `needs_credentials_or_permissions` | 进入第 6 步，或修正配置文件权限 |
@@ -145,7 +147,7 @@ sudo python3 /opt/qq-work-assistant/doctor.py --json
 在用户**自己的电脑**打开终端，使用用户现有的 SSH 用户、服务器和密钥；不要照抄占位符：
 
 ```bash
-ssh -N -L 18080:127.0.0.1:18080 YOUR_SSH_USER@YOUR_SERVER
+ssh -o ExitOnForwardFailure=yes -o ServerAliveInterval=30 -N -L 127.0.0.1:18080:127.0.0.1:18080 YOUR_SSH_USER@YOUR_SERVER
 ```
 
 需要指定密钥时在命令里加入 `-i` 和用户自己的私钥文件路径。不要使用 `StrictHostKeyChecking=no` 跳过身份检查；首次主机指纹按厂商控制台信息核对。出现空白窗口通常是隧道正在运行，需要保持该连接。
@@ -179,7 +181,7 @@ sudo python3 doctor.py --json --require-ready
 
 服务器定时检查间隔为 30 秒，网络正常时会有一个检查周期内的延迟。主动消息受 QQ 平台权限、额度和风控限制。平台明确拒绝记为失败，网络结果不明记为待核对，不盲目重试；不能保证每个账号都能无限主动推送。没有主动消息能力时如实交接，日常通知分析仍可使用，但不能宣布提醒验收通过。
 
-如果必须等三小时，Agent 有定时回查功能时设置只读跟进，完成后停止；没有该能力时把待验证时刻和下一次检查命令交给用户，不承诺会自动醒来。QQ 云端提醒与 Agent 自身是否在线是两回事。
+如果必须等三小时，Agent 有定时回查功能时设置只读跟进，完成后停止；没有该能力时把待验证时刻交给用户：到时在 QQ 发送“提醒”查看状态，再确认手机是否收到主动提醒；服务器端用 `sudo python3 /opt/qq-work-assistant/doctor.py --json` 检查连接，它本身不提供逐条送达证明。不承诺 Agent 会自动醒来。QQ 云端提醒与 Agent 自身是否在线是两回事。
 
 ## 9. 交接给用户
 

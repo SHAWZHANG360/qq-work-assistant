@@ -2,7 +2,7 @@
 
 本项目是通用 QQ 私聊工作助手，使用部署者自己的 QQ 机器人和 DeepSeek API。用户把仓库链接交给你并要求搭建时，请实际完成可执行的部署、验证和交接，不要只复述 README。
 
-1. 先读 `README.md`、`AGENT_SETUP.md`、`PRIVACY.md`。修改代码前也要读 `runtime-files.txt`、`.github/workflows/verify.yml`。
+1. 先读 `START_HERE.md`、`README.md`、`AGENT_SETUP.md`、`PRIVACY.md`。确认当前任务有终端与网络能力；仅给链接不等于已下载项目或获得服务器权限。修改代码前也要读 `runtime-files.txt`、`.github/workflows/verify.yml`。
 2. 将用户已有账号、服务器、授权和偏好沿用下来。只询问缺失信息，不重复要求已完成的确认。没有服务器连接能力时明确说明，并给出用户可以照做的下一步。
 3. 在目标服务器运行 `python3 doctor.py --json`。它不读取密钥正文、不调用模型。Windows/macOS 是操作端，不是本项目的服务运行环境；不要在用户电脑强行执行 Ubuntu 安装脚本。
 4. 新安装使用 `install.sh`；已安装通用版使用 `upgrade.sh`，先检查和备份。发现身份文件损坏、未知旧部署或 AppID 不一致时，保留现场，不通过清空数据绕过保护。

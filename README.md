@@ -8,13 +8,15 @@
 
 ## 想让 Agent 帮你搭建
 
-把仓库链接交给 Codex、Claude Code 或其他有终端权限的 Agent，并加一句：
+**只拿到链接的新用户，先看 [START_HERE.md](START_HERE.md)。** 已补上 Claude Code、TRAE、WorkBuddy 的项目入口、人工交接、网络失败和终端权限排错。想给朋友使用，看 [分享给好友](FRIEND_SHARING.md)。
 
-> 请读取这个仓库的 AGENTS.md 和 AGENT_SETUP.md，检查我的环境后，实际帮我安装并验证。只有必须本人登录、购买、填写密钥、绑定和确认权限的步骤才交给我，并给出具体指引。只用我自己的账号，不要把密钥放进聊天或 GitHub。
+把仓库链接交给 Codex、Claude Code、TRAE、WorkBuddy 或其他有终端权限的 Agent，并加一句：
+
+> 请下载这个仓库，读取 START_HERE.md、AGENTS.md 和 AGENT_SETUP.md，检查我的环境后，实际帮我安装并验证。只有必须本人登录、购买、填写密钥、绑定和确认权限的步骤才交给我，并给出具体指引。只用我自己的账号，不要把密钥放进聊天或 GitHub。
 
 仓库入口：[Agent 部署流程](AGENT_SETUP.md) · [Agent 约定](AGENTS.md) · [手动安装教程](安装教程.md)。提供链接本身不授予工具权限；Agent 需要能执行终端命令，并连接你授权的服务器。只有聊天能力的助手可以指导，但无法替你执行安装。
 
-最新版本 **v1.1.0**：[下载源码包](https://github.com/SHAWZHANG360/qq-work-assistant/raw/refs/heads/main/qq-work-assistant-v1.1.0.zip) · [校验和](https://github.com/SHAWZHANG360/qq-work-assistant/blob/main/SHA256SUMS.txt) · [更新说明](CHANGELOG.md)。旧版 v1.0.0 包作为历史版本保留，不含本次提醒和 Agent 部署入口。
+最新版本 **v1.1.1**：[下载源码包](https://github.com/SHAWZHANG360/qq-work-assistant/raw/refs/heads/main/qq-work-assistant-v1.1.1.zip) · [校验和](https://github.com/SHAWZHANG360/qq-work-assistant/blob/main/SHA256SUMS.txt) · [更新说明](CHANGELOG.md)。v1.1.1 补全新用户指引，运行逻辑与 v1.1.0 相同。旧版压缩包保留为历史快照。
 
 ## 回复和提醒规则
 
@@ -58,6 +60,7 @@ sudo systemctl status qq-work-assistant --no-pager
 
 | 文件 | 用途 |
 |---|---|
+| `START_HERE.md` / `FRIEND_SHARING.md` | 新用户与各 Agent 客户端起步 / 分享好友与单用户边界 |
 | `AGENTS.md` / `AGENT_SETUP.md` / `CLAUDE.md` | Agent 入口、按阶段自动执行与人工操作指引 |
 | `doctor.py` / `upgrade.sh` | 只读环境检查 / 备份后升级通用版 |
 | `action-brief.mjs` / `reminders.mjs` | 动作优先的回复、持久化提醒与发送状态 |
