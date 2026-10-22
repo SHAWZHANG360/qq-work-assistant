@@ -107,6 +107,15 @@ export class QQClient {
     }, this.#generation);
   }
 
+  async push({senderId,content}={}) {
+    if(!this.#running)throw new QQClientError('QQ 客户端尚未启动。');
+    if(!nonempty(senderId,256)||!nonempty(content,3000))throw new QQClientError('提醒参数无效。');
+    // No expired or fabricated msg_id: official proactive route, platform quotas apply.
+    return this.#authorizedRequest(`/v2/users/${encodeURIComponent(senderId)}/messages`,{
+      method:'POST',body:{content,msg_type:0},
+    },this.#generation);
+  }
+
   #active(generation) { return this.#running && generation === this.#generation; }
 
   #status(state, message, code) {

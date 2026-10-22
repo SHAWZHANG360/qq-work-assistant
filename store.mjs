@@ -188,6 +188,7 @@ export function createStore(dataDir) {
 
     // Pairing messages never enter logs, including a retried pairing webhook.
     if (/^绑定(?:\s|$)/.test(trimmed)) return { reply: '已绑定当前账号。', saved: false, paired: false };
+    if (['/reminders','提醒','/cancel-reminders','取消提醒'].includes(trimmed)) return { saved:false, paired:false };
     if (trimmed === '/help') return {
       reply: '把重要工作内容复制成文字发来即可记录。/today 查看今天的记录数量。当前测试版不会展开附件或转发卡片，日志为原文记录。',
       saved: false, paired: false,

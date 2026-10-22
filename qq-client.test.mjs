@@ -135,6 +135,13 @@ test('reply uses C2C endpoint, original msg_id, explicit sequence and QQBot auth
   await assert.rejects(f.client.reply({ senderId: 'owner-openid', messageId: 'message-1', content: '', msgSeq: 1 }), QQClientError);
 });
 
+test('proactive reminders use official C2C without an expired or invented message id', async t => {
+  const f=fixture(t);await f.open();
+  await f.client.push({senderId:'owner-openid',content:'提醒测试'});
+  assert.equal(f.requests.at(-1).url,'https://api.bot.qq.com/v2/users/owner-openid/messages');
+  assert.deepEqual(f.requests.at(-1).json,{content:'提醒测试',msg_type:0});
+});
+
 test('HTTP 200 token business error fails closed without echoing secrets or server messages', async t => {
   const f = fixture(t, { handler: req => req.url.endsWith('/app/getAppAccessToken')
     ? Response.json({ code: 100016, message: `server echo ${SECRET} ${TOKEN} ${CONTENT}` }) : undefined });

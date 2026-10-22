@@ -6,7 +6,8 @@ import { createAttachmentStore, isImageAttachment } from './attachments.mjs';
 import { createDeepSeekSettings as createModelSettings } from './deepseek-settings.mjs';
 import { createUsageStore, formatUsage } from './usage-store.mjs';
 import { createDocumentStore, isDocumentAttachment } from './documents.mjs';
-import { formatBriefAnalysis } from './analyzer.mjs';
+import { formatActionBrief } from './action-brief.mjs';
+import { createReminders } from './reminders.mjs';
 
 export function localDay(date = new Date()) {
   const parts = Object.fromEntries(new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Taipei', year: 'numeric', month: '2-digit', day: '2-digit' }).formatToParts(date).map(p => [p.type, p.value]));
@@ -30,6 +31,7 @@ export function createApplication({ appId: configuredAppId, dataDir, preferences
   fs.mkdirSync(reportsDir, { recursive: true, mode: 0o700 });
   const store = createStore(dataDir);
   const usage = createUsageStore({ dataDir });
+  const reminders = createReminders({ dataDir });
   store.ensurePairingCode();
   const jobs = [];
   // Signed attachment links exist only in memory, never in raw logs or job files.
@@ -53,6 +55,7 @@ export function createApplication({ appId: configuredAppId, dataDir, preferences
   let client = null, generation = 0, busy = false, testBusy = false, uploadBusy = false, paused = false, stopping = false;
   let analysisReady = jobs.some(job => job.state === 'complete'), lastError = '', lastReceivedAt = null;
   let usageWarning = '';
+  let reminderWarning = '';
   let network = { state: 'stopped', message: '等待填写 QQ AppSecret。' };
   const diagnosticFile = path.join(dataDir, 'receive-diagnostics.json');
   const diagnostics = { eventsSeen: 0, c2cSeen: 0, lastEvent: null, lastC2C: null, lastStoreResult: null };
@@ -122,9 +125,26 @@ export function createApplication({ appId: configuredAppId, dataDir, preferences
     if (!daily.length) lines.push('今天暂无待整理的消息。');
     return lines.join('\n');
   }
-  function brief(result, maxChars = 400) {
-    return formatBriefAnalysis(result, { maxChars, maxActions: 3, ownerName: preferences?.ownerProfile?.name, detailsHint: '完整详情见服务器日志。' });
+  function brief(result, maxChars = 400, job = null) {
+    return formatActionBrief(result, { maxChars, maxActions: 3, ownerName: preferences?.ownerProfile?.name, reminders: job ? reminders.forJob(digestId(job.message.id)) : [] });
   }
+  function scheduleReminder(job) {
+    try {
+      reminders.schedule({jobId:digestId(job.message.id),owner:store.getOwner(),receivedAt:job.receivedAt,actions:job.result.actions});
+      reminderWarning='';
+    } catch { reminderWarning='提醒未保存，请在管理页检查；分析结果已保留。'; }
+  }
+  async function flushReminders() {
+    if(stopping)return;
+    await reminders.dispatch({owner:store.getOwner(),connected:network.state==='connected',send:async (owner,content)=>{
+      if(stopping||store.getOwner()!==owner||!client)throw new Error('Reminder sender unavailable');
+      await client.push({senderId:owner,content});
+    }});
+  }
+  const reminderTimer=setInterval(()=>{void flushReminders().catch(()=>{reminderWarning='提醒记录写入失败，请检查服务器存储。'})},30000);
+  reminderTimer.unref?.();
+  // Only recover plans requested by this version, never backfill old notices.
+  for(const job of jobs)if(job.state==='complete'&&job.reminderRequested&&job.result)scheduleReminder(job);
   function dailyBrief(day) {
     const daily = jobs.filter(j => j.day === day);
     const complete = daily.filter(j => j.state === 'complete' && j.result);
@@ -228,11 +248,12 @@ export function createApplication({ appId: configuredAppId, dataDir, preferences
             }
             result.notes = [...new Set([...result.notes, ...documentNotes])].slice(0, 8);
           }
-          job.result = result; job.state = 'complete'; job.completedAt = new Date().toISOString();
+          job.result = result; job.state = 'complete'; job.completedAt = new Date().toISOString(); job.reminderRequested = true;
           if (job.error && lastError === job.error) lastError = '';
           delete job.error; delete job.phase; attachmentSources.delete(job.message.id);
           analysisReady = true; persist(job); saveReport(job.day);
-          const delivered = await reply(job.message, `${brief(result)}\n\n${formatUsage(usage.forJob(digestId(job.message.id)))}`, 2);
+          scheduleReminder(job);
+          const delivered = await reply(job.message, `${brief(result,400,job)}${reminderWarning?'\n'+reminderWarning:''}\n\n${formatUsage(usage.forJob(digestId(job.message.id)))}`, 2);
           job.deliveredToQQ = delivered; persist(job);
         } catch (error) {
           job.state = 'failed'; job.error = error?.code === 'ANALYSIS_INPUT'
@@ -270,9 +291,11 @@ export function createApplication({ appId: configuredAppId, dataDir, preferences
     }
     if (store.getOwner() !== message.senderId) return;
     const trimmed = (message.text ?? '').trim();
+    if (['/reminders','提醒'].includes(trimmed)) { await reply(message, reminders.list(store.getOwner()), 1); return; }
+    if (['/cancel-reminders','取消提醒'].includes(trimmed)) { await reply(message, `已取消 ${reminders.cancel(store.getOwner())} 条待发送提醒。`, 1); return; }
     if (trimmed === '/today') { await reply(message, dailyBrief(localDay()), 1); return; }
     if (trimmed === '/help') {
-      await reply(message, '仅处理已绑定本人的私聊。可发文字、PNG/JPEG/WebP 图片，或 PDF/DOCX/XLSX/PPTX/TXT/CSV 文件。文件无回复或下载失败时，请在服务器“上传附件”选择原文件。文件每条最多3个、单个10MiB、合计20MiB；扫描PDF和嵌入图片请改发截图。默认最多3条重点，完整分析见服务器日志。/today 查看今天重点。合并转发卡片、语音不展开；请补充原消息日期。', 1); return;
+      await reply(message, '发通知文字、图片或附件，我会直接列出要做的事，保留用量。有明确时刻就按原文提醒，时间已过则标注已过且不新建提醒，没有具体时刻默认收到后3小时提醒（不是原文截止时间）。发送“提醒”查看安排，发送“取消提醒”取消全部待发送提醒；/today 查看今天重点。提醒受 QQ 平台权限和额度限制，失败状态会保留。', 1); return;
     }
     let recoveredRecord;
     if (!outcome.saved) {
@@ -368,7 +391,8 @@ export function createApplication({ appId: configuredAppId, dataDir, preferences
       const catalog = modelSettings.getSnapshot();
       return { appId, network, credentialsSaved: secrets.exists(), bound: Boolean(owner), pairingCommand: owner ? null : `绑定 ${store.ensurePairingCode()}`, analysisReady, analysisBusy: busy || testBusy, uploadBusy, analysisPaused: paused, lastError, lastReceivedAt, pending: jobs.filter(j => ['pending', 'processing'].includes(j.state)).length, completed: jobs.filter(j => j.state === 'complete').length, failed: jobs.filter(j => j.state === 'failed').length, report: dailyReport(localDay()), dailyBrief: dailyBrief(localDay()), dataDir,
         modelSettings: catalog.settings, modelCatalog: { models: catalog.models, source: catalog.catalogSource, warning: [catalog.catalogWarning, catalog.settingsWarning].filter(Boolean).join(' ') }, usage: { ...usage.snapshot(), warning: usageWarning },
-        recent: [...jobs].sort((a, b) => b.receivedAt.localeCompare(a.receivedAt)).slice(0, 12).map(j => ({ id: digestId(j.message.id), receivedAt: j.receivedAt, source: j.source ?? 'qq', state: j.state, summary: j.result?.summary ?? j.error ?? '等待分析', brief: j.result ? brief(j.result) : j.error ?? '等待分析', detail: j.result ? formatAnalysis(j.result) : '', documents: (j.documents ?? []).map(d => ({ name: d.name, truncated: d.truncated, warnings: d.warnings })), warnings: j.documentWarnings ?? [], deliveredToQQ: j.deliveredToQQ ?? false, usage: usage.forJob(digestId(j.message.id)) })) };
+        reminders: reminders.snapshot(), reminderWarning,
+        recent: [...jobs].sort((a, b) => b.receivedAt.localeCompare(a.receivedAt)).slice(0, 12).map(j => ({ id: digestId(j.message.id), receivedAt: j.receivedAt, source: j.source ?? 'qq', state: j.state, summary: j.result?.summary ?? j.error ?? '等待分析', brief: j.result ? brief(j.result,400,j) : j.error ?? '等待分析', detail: j.result ? formatAnalysis(j.result) : '', documents: (j.documents ?? []).map(d => ({ name: d.name, truncated: d.truncated, warnings: d.warnings })), warnings: j.documentWarnings ?? [], deliveredToQQ: j.deliveredToQQ ?? false, usage: usage.forJob(digestId(j.message.id)) })) };
     },
     uploadDocuments,
     async saveModelSettings(input) { await modelSettings.save(input); },
@@ -376,13 +400,13 @@ export function createApplication({ appId: configuredAppId, dataDir, preferences
       if (busy || testBusy) throw new Error('正在分析工作消息，请稍后再测试。');
       testBusy = true;
       try {
-        const result = await measuredCall('analysis', { text: '测试通知（虚构内容）：请测试用户于2026年10月20日17:00前提交示例部门课程大纲。', receivedAt: new Date().toISOString(), hasAttachments: false }, modelSettings.getSettings());
+        const result = await measuredCall('analysis', { text: '测试通知（虚构内容）：请示例姓名于2026年10月20日17:00前提交示例部门课程大纲。', receivedAt: new Date().toISOString(), hasAttachments: false }, modelSettings.getSettings());
         analysisReady = true; lastError = ''; return formatAnalysis(result);
       } finally { testBusy = false; kick(); }
     },
     retry() { for (const job of jobs) if (job.state === 'failed') { job.state = 'pending'; delete job.error; persist(job); } kick(); },
     setPaused(value) { paused = Boolean(value); if (!paused) kick(); },
-    stop() { stopping = true; abortController.abort(); ++generation; if (client) client.stop(); },
+    stop() { stopping = true; clearInterval(reminderTimer); abortController.abort(); ++generation; if (client) client.stop(); },
     receive,
   };
 }

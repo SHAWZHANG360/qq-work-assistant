@@ -13,3 +13,12 @@ qq-secret
 deepseek-key
 *.pem
 id_ed25519*
+
+reminders.json
+messages/
+jobs/
+reports/
+backups/
+*.tar.gz
+deployment-state*.json
+deployment-state*.md

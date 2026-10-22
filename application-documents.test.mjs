@@ -128,7 +128,7 @@ test('partially extracted documents mark actions for confirmation and explain th
   assert.equal(input.documentUncertain, true); assert.equal(input.hasAttachments, true);
   const saved = job(s.dataDir, 'partial-document'); assert.equal(saved.result.actions[0].needsConfirmation, true);
   assert.match(s.app.state().report, /部分读取，不能视为全文/); assert.match(s.app.state().report, /第2页为扫描图片/);
-  assert.match(s.app.state().recent[0].brief, /文件提取不完整/);
+  assert.match(s.app.state().recent[0].brief, /附件未读全/);
 });
 
 test('an unreadable file yields no model call or fabricated task, with local upload guidance', async t => {
@@ -210,7 +210,7 @@ test('a document-only receipt gap asks for the original instead of inventing uns
   assert.equal(job(dataDir, 'document-gap').hasUnknownAttachments, true);
 });
 
-test('brief QQ replies show the first three urgent actions while daily brief keeps all confirmation counts', async t => {
+test('brief QQ replies put actions first, retain unread warnings, and omit confirmation boilerplate', async t => {
   const result = { ...structuredClone(emptyResult), actions: [action('较晚任务', '2026-10-23'), action('最早任务', '2026-10-17', true), action('第三任务', '2026-10-19'), action('第二任务', '2026-10-18')],
     questions: Array.from({ length: 6 }, (_, i) => `虚构待确认问题${i + 1}`), notes: [uncertainDocumentNote] };
   const s = make(t, { ...fakeDocuments(), analyze: async () => structuredClone(result) }); await bind(s);
@@ -218,10 +218,10 @@ test('brief QQ replies show the first three urgent actions while daily brief kee
   const reply = s.replies.filter(item => item.msgSeq === 2).at(-1).content.split('\n\n')[0];
   assert.ok(Array.from(reply).length <= 400); assert.ok(reply.indexOf('最早任务') < reply.indexOf('第二任务'));
   assert.ok(reply.indexOf('第二任务') < reply.indexOf('第三任务')); assert.doesNotMatch(reply, /较晚任务/);
-  assert.match(reply, /另有1项未展开/); assert.match(reply, /〔待确认〕/);
+  assert.match(reply, /^【要做】/); assert.doesNotMatch(reply, /另有|〔待确认〕|完整详情|负责人待确认|时间待确认/);
+  assert.match(reply, /截止：2026-10-17/);
   assert.match(s.app.state().report, /较晚任务的完整原文依据/);
-  assert.match(s.app.state().dailyBrief, /另有11个待确认问题/); assert.match(s.app.state().dailyBrief, /文件提取不完整/);
-  assert.match(s.app.state().dailyBrief, /另有5项未展开/);
+  assert.doesNotMatch(s.app.state().dailyBrief, /待确认问题|完整详情/); assert.match(s.app.state().dailyBrief, /附件未读全/);
 });
 
 test('stop during local extraction must not create a new pending model job', async t => {

@@ -31,3 +31,8 @@ store.test.mjs
 test_configure.py
 usage-store.mjs
 usage-store.test.mjs
+action-brief.mjs
+reminders.mjs
+reminders.test.mjs
+doctor.py
+test_doctor.py

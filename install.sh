@@ -19,7 +19,7 @@ apt-get install -y ca-certificates curl xz-utils python3 python3-venv
 scratch=$(mktemp -d)
 trap 'rm -rf -- "$scratch"' EXIT
 # Use a supported Node 24 release and verify the official archive checksum.
-version=v24.22.0
+version=v24.22.1
 archive="node-${version}-linux-${arch}.tar.xz"
 curl --fail --silent --show-error --location --proto '=https' --tlsv1.2 --connect-timeout 20 --max-time 600 \
   "https://nodejs.org/dist/${version}/${archive}" -o "$scratch/$archive"
