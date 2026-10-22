@@ -53,10 +53,24 @@ jobs:
       - name: Verify rerun refuses to overwrite an installation
         run: |
           if sudo bash install.sh; then echo 'Unexpected overwrite'; exit 1; fi
+      - name: Enable optional sharing without reentering credentials
+        run: |
+          sudo python3 /opt/qq-work-assistant/configure.py --sharing on
+          sudo systemctl restart qq-work-assistant
+          sleep 3
+          sudo python3 /opt/qq-work-assistant/doctor.py --json --require-ready
+          sudo python3 - <<'PY'
+          import json
+          from pathlib import Path
+          members=json.loads(Path('/var/lib/qq-work-assistant/family-members.json').read_text())
+          assert len(members['members'])==1 and members['members'][0]['status']=='active'
+          assert len(list(Path('/var/lib/qq-work-assistant/family-users').glob('*/owner.json')))==1
+          print('Optional sharing and approved member verified with mock QQ transport')
+          PY
       - name: Verify read-only doctor and upgrade preserve configuration and owner
         run: |
           sudo python3 /opt/qq-work-assistant/doctor.py --json --require-ready
-          sudo sha256sum /etc/qq-work-assistant/config.json /var/lib/qq-work-assistant/owner.json /var/lib/qq-work-assistant/reminders.json > /tmp/config-before.sha256
+          sudo sha256sum /etc/qq-work-assistant/config.json /var/lib/qq-work-assistant/owner.json /var/lib/qq-work-assistant/reminders.json /var/lib/qq-work-assistant/family-members.json > /tmp/config-before.sha256
           sudo bash upgrade.sh
           sudo sha256sum --check /tmp/config-before.sha256
           sudo python3 /opt/qq-work-assistant/doctor.py --json --require-ready
